@@ -1,0 +1,100 @@
+.org 0000h
+	ljmp start
+
+.org 100h
+	start:
+		; P1.0 = Clear
+		; P1.2 = CLK
+		; P1.2 = Latch
+		; P1.4 = Output Enable
+		; P1.6 = Data
+
+		; P1.0 = Clear
+		; P1.1 = CLK
+		; P1.2 = Latch
+		; P1.3 = Output Enable
+		; P1.4 = Data
+		mov R0, #00h
+		mov R1, #00h
+		mov R4, #04h
+		clr P1.1
+		clr P1.2
+		setb P1.3
+		setb P1.0
+		loop:
+			mov dptr, #1000h
+			mov A, R1
+			movc A, @A+dptr
+			cjne A, #00h, high1
+			clr P1.4
+			finish:
+			cpl P1.1
+			cpl P1.2
+			jnb P1.1, loop
+			;lcall delay
+			cjne R0, #14h, ending
+			mov R0, #00h
+			clr P1.3
+			final:
+				lcall delay2
+				setb P1.3
+				clr P1.1
+				clr P1.2
+				setb P1.0
+				djnz R4, loop
+				ljmp last
+			ending:
+			inc R0
+			inc R1
+				sjmp loop
+
+			high1:
+				setb P1.4
+				ljmp finish
+
+	delay:
+		mov R2, #01h
+		loop1:
+			djnz R2, loop1
+		ret
+
+	delay2:
+		mov R3, #0Ah
+		mov R5, #0Ah
+		;mov R6, #01h
+		loop3:
+			djnz R3, loop3
+				mov R3, #0FFh
+				djnz R5, loop3
+					mov R5, #0FFh
+					;djnz R6, loop3
+		ret
+
+
+	last:
+		mov R1, #00h
+		mov R4, #04h
+		sjmp loop
+.org 1000h
+;top row
+.db 00h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 00h, 00h, 00h
+;2nd row
+.db 00h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 01h, 00h, 00h
+;3rd row
+.db 00h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 00h, 01h, 00h
+;bottom row
+.db 00h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 00h, 00h, 01h
+END
+
+
+
+
+

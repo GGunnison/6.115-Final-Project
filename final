@@ -1,0 +1,170 @@
+.org 0000h
+	ljmp start
+
+.org 0Bh
+	ljmp ISR
+
+.org 100h
+	start:
+
+		; P1.0 = Clear
+		; P3.4 = CLK
+		; P1.2 = Latch
+		; P1.3 = Output Enable
+		; P1.4 = Data
+
+
+		; With outputs enabled
+		; 00h = clear shift registers
+		; 12h = write high value
+		; 02h = write low value
+		; 04h = latch Data
+		; 00h = enable output
+
+		; With outputs disabled
+		; 08h = clear shift registers
+		; 1Ah = write high value
+		; 0Ah = write low value
+		; 0Ch = latch Data
+
+		lcall init
+
+		loop:
+			lcall frequencyshift
+			switch:
+				lcall delay
+				lcall bigsquare
+				lcall delay
+				lcall littlesquare
+				sjmp switch
+			finish:
+			sjmp finish
+
+		init:
+			mov R0, #00h 		; initialize db position
+			mov R1, #0E0h
+			mov R2, #0B0h
+			mov R3, #00h 
+			mov R4, #10h
+			mov R5, #00h
+
+			
+			mov TMOD, #01h 		; timer 0 16 bit mode
+			mov TH0, R1			; set count for timer
+			mov TL0, R2
+			setb TR0 			; activate timer 0
+			mov IE, #82h 		; activate interrupt for counter 0 overflow
+			mov dptr, #1000h	; starting address of db
+			ret
+			
+
+		ISR:
+			cpl P3.4
+			jb P3.4, ending
+			movx A, @dptr
+			mov P1, A
+			inc dptr
+			inc R0
+			cjne R0, #54h, ending
+			mov R0, #00h
+			mov dph, R4
+			mov dpl, R5
+			inc R3
+			ending:
+				mov TH0, R1		; set count for timer
+				mov TL0, R2
+
+				reti
+
+		frequencyshift:
+			cjne R3, #02h, frequencyshift
+			mov R3, #00h
+			inc R1
+			cjne R1, #0FFh, frequencyshift
+			tune:
+			inc R2
+			cjne R2, #0FFh, tune
+			ret
+
+		littlesquare:
+			mov R5, #54h
+			ret
+
+		bigsquare:
+			mov R5, #0A9h
+			ret
+
+		delay:
+			mov R6, #0FFh
+			mov R7, #74h
+			delayloop:
+				djnz R6, delayloop
+					mov R6, #0FFh
+					djnz R7, delayloop	
+			ret
+
+
+
+
+.org 1000h
+
+; clear registers and enable
+;.db 08h, 08h, 00h
+;top row
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 00h, 00h, 00h, 02h
+;2nd row
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 01h, 00h, 00h, 02h
+;3rd row
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 00h, 01h, 00h, 02h
+;bottom row
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 01h, 01h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 00h, 00h, 01h, 02h
+;small cube
+;top row
+.db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+.db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+.db 01h, 00h, 00h, 00h, 02h
+;2nd row
+.db 00h, 00h, 00h, 00h, 00h, 01h, 01h, 00h
+.db 00h, 01h, 01h, 00h, 00h, 00h, 00h, 00h
+.db 00h, 01h, 00h, 00h, 02h
+;3rd row
+.db 00h, 00h, 00h, 00h, 00h, 01h, 01h, 00h
+.db 00h, 01h, 01h, 00h, 00h, 00h, 00h, 00h
+.db 00h, 00h, 01h, 00h, 02h
+;bottom row
+.db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+.db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+.db 00h, 00h, 00h, 01h, 02h
+;big cube
+;top row
+.db 01h, 01h, 01h, 01h, 01h, 00h, 00h, 01h
+.db 01h, 00h, 00h, 01h, 01h, 01h, 01h, 01h
+.db 01h, 00h, 00h, 00h, 02h
+;2nd row
+.db 01h, 00h, 00h, 01h, 00h, 00h, 00h, 00h
+.db 00h, 00h, 00h, 00h, 01h, 00h, 00h, 01h
+.db 00h, 01h, 00h, 00h, 02h
+;3rd row
+.db 01h, 00h, 00h, 01h, 00h, 00h, 00h, 00h
+.db 00h, 00h, 00h, 00h, 01h, 00h, 00h, 01h
+.db 00h, 00h, 01h, 00h, 02h
+;bottom row
+.db 01h, 01h, 01h, 01h, 01h, 00h, 00h, 01h
+.db 01h, 00h, 00h, 01h, 01h, 01h, 01h, 01h
+.db 00h, 00h, 00h, 01h, 02h
+
+
+
+END
+			
+
+
+
